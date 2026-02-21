@@ -2,6 +2,7 @@ use egui::Pos2;
 use egor_render::{GeometryBatch, vertex::Vertex};
 use glam::{Mat2, Vec2, vec2};
 use lyon::path::Path;
+use lyon::path::path_buffer::Builder;
 use crate::{color::Color, math::Rect};
 
 #[derive(Default)]
@@ -388,8 +389,14 @@ impl Drop for PolylineBuilder<'_> {
 
 
 
-
-
+#[derive(Copy, Clone, Debug)]
+pub enum PathStep {
+    Begin(Vec2),
+    MoveTo(Vec2),
+    LineTo(Vec2),
+    QuadBezierTo(Vec2, Vec2),
+    CubicBezierTo(Vec2, Vec2, Vec2),
+}
 
 
 
@@ -407,8 +414,9 @@ pub struct PathBuilder<'a> {
     radius: f32,
     segments: usize,
     color: Color,
+    steps: Vec<PathStep>,
 
-    path: Path
+    // pub builder: Builder,
 }
 
 impl<'a> PathBuilder<'a> {
@@ -422,9 +430,29 @@ impl<'a> PathBuilder<'a> {
             radius: 10.0,
             segments: 3,
             color: Color::WHITE,
-            path: Path::default(),
+
+            // builder: Path::builder(),
+            // builder: lyon::path::path::Builder,
+            steps: Vec::new(),
         }
     }
+
+    // pub fn begin(mut self, pos: Vec2) -> Self {
+    //
+    // }
+
+
+
+
+
+
+
+
+
+
+
+
+
     /// Sets the world-space position of the polygon
     pub fn at(mut self, pos: Vec2) -> Self {
         self.position = pos;
@@ -457,8 +485,10 @@ impl<'a> PathBuilder<'a> {
         self
     }
 
-    pub fn path(mut self, path: Path) -> Self {
-        self.path = path;
+
+
+    pub fn steps(mut self, steps: &[PathStep]) -> Self {
+        self.steps.extend_from_slice(steps);
         self
     }
 }
@@ -476,19 +506,21 @@ impl Drop for PathBuilder<'_> {
         use lyon::path::Path;
         use lyon::tessellation::*;
 
-
-        // Build a Path.
         let mut builder = Path::builder();
-        builder.begin(point(0.0, 0.0));
-        builder.line_to(point(100.0, 0.0));
-        builder.quadratic_bezier_to(point(200.0, 0.0), point(200.0, 100.0));
-        builder.cubic_bezier_to(point(100.0, 100.0), point(0.0, 100.0), point(0.0, 0.0));
+
+        for step in &self.steps {
+            match step {
+                PathStep::Begin(v) => { builder.begin(point(v.x, v.y));}
+                PathStep::MoveTo(v) => {}
+                PathStep::LineTo(v) => { builder.line_to(point(v.x, v.y));}
+                PathStep::QuadBezierTo(v1, v2) => { builder.quadratic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y));}
+                PathStep::CubicBezierTo(v1, v2, v3) => { builder.cubic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y), point(v3.x, v3.y));}
+            }
+        }
+
         builder.end(true);
         let path = builder.build();
-        // Let's use our own custom vertex type instead of the default one.
-        //  #[derive(Copy, Clone, Debug)]
-        //  struct MyVertex { position: [f32; 2] }
-        // Will contain the result of the tessellation.
+
         let mut geometry: VertexBuffers<Vertex, u16> = VertexBuffers::new();
         let mut tessellator = FillTessellator::new();
         {
@@ -506,23 +538,6 @@ impl Drop for PathBuilder<'_> {
                 }),
             ).unwrap();
         }
-        // The tessellated geometry is ready to be uploaded to the GPU.
-        println!(" -- {} vertices {} indices",
-                 geometry.vertices.len(),
-                 geometry.indices.len()
-        );
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

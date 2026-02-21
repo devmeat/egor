@@ -11,6 +11,7 @@ use egor::{
 };
 use egor::app::egui::epaint::Vertex;
 use egor::app::egui::Pos2;
+use egor::render::PathStep;
 use crate::{animation::SpriteAnim, tilemap::EgorMap};
 
 const PLAYER_SIZE: f32 = 64.0;
@@ -256,21 +257,14 @@ fn main() {
 
 
 
-
-            use lyon::math::point;
-            use lyon::path::Path;
-
-
-            // Build a Path.
-            let mut builder = Path::builder();
-            builder.begin(point(0.0, 0.0));
-            builder.line_to(point(1.0, 0.0));
-            builder.quadratic_bezier_to(point(2.0, 0.0), point(2.0, 1.0));
-            builder.cubic_bezier_to(point(1.0, 1.0), point(0.0, 1.0), point(0.0, 0.0));
-            builder.end(true);
-            let path = builder.build();
-
-            gfx.path().path(path).color(Color::BLUE);
+            gfx.path()
+                .color(Color::BLUE)
+                .steps(&[
+                    PathStep::Begin(vec2(0.0,0.0)),
+                    PathStep::LineTo(vec2(100.0, 0.0)),
+                    PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
+                    PathStep::CubicBezierTo(vec2(100.0, 100.0), vec2(0.0, 100.0), vec2(0.0, 0.0)),
+                ]);
 
 
 
@@ -278,7 +272,8 @@ fn main() {
 
 
 
-                gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
+
+            gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
 
 
 
