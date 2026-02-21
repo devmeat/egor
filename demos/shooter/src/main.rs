@@ -149,14 +149,6 @@ fn main() {
                   events,
                   ..
               }| {
-            for event in events {
-                if event == &WindowEvent::CloseRequested {
-                    println!("Quitting already? Don't be a sore loser");
-                    println!("Final Wave: {}", state.wave);
-                    println!("Killed {} zombies", state.kills);
-                    state.game_over = true;
-                }
-            }
 
             if timer.frame == 0 {
                 state.map.load_tileset(
@@ -169,46 +161,15 @@ fn main() {
                     include_bytes!("../assets/otsp_walls_01.png"),
                     "otsp_walls_01.png",
                 );
-                state.player_tex = gfx.load_texture(include_bytes!("../assets/soldier.png"));
-                state.enemy_tex = gfx.load_texture(include_bytes!("../assets/zombie.png"));
-                let mut minimap = gfx.create_offscreen(200, 200);
-                state.minimap_tex = gfx.offscreen_as_texture(&mut minimap);
-                state.minimap = Some(minimap);
                 return;
             }
 
             let screen_size = gfx.screen_size();
 
-
-
-            let screen_half = screen_size / 2.0;
-            let position = state.player.rect.position - screen_half
-                + Into::<Vec2>::into(input.mouse_position());
-
-            let dx = input.keys_held(&[KeyCode::KeyD, KeyCode::ArrowRight]) as i8
-                - input.keys_held(&[KeyCode::KeyA, KeyCode::ArrowLeft]) as i8;
-            let dy = input.keys_held(&[KeyCode::KeyS, KeyCode::ArrowDown]) as i8
-                - input.keys_held(&[KeyCode::KeyW, KeyCode::ArrowUp]) as i8;
-            let moving = dx != 0 || dy != 0;
-
-            state
-                .player
-                .rect
-                .translate(vec2(dx as f32, dy as f32) * 200.0 * timer.delta);
-
             gfx.camera().center(state.player.rect.position, screen_size);
             gfx.clear(Color::WHITE);
 
 
-            state.fire_cd -= timer.delta;
-            if input.mouse_held(MouseButton::Left) && state.fire_cd <= 0.0 {
-                state.bullets.extend(spawn_bullets(
-                    state.player.rect.center(),
-                    position,
-                    state.spread,
-                ));
-                state.fire_cd = 1.0 / state.fire_rate;
-            }
 
             for e in &mut state.enemies {
                 let dir = (state.player.rect.position - e.rect.position).normalize_or_zero();
@@ -260,7 +221,7 @@ fn main() {
             gfx.path()
                 .thickness(4.0)
                 .stroke_color(Color::BLACK)
-                .fill_color(Color::BLUE)
+                // .fill_color(Color::BLUE)
                 .steps(&[
                     PathStep::LineTo(vec2(100.0, 0.0)),
                     PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
@@ -271,44 +232,169 @@ fn main() {
 
 
 
+                // -------------------------
+                // 1️⃣ Simple stroked shape
+                // -------------------------
+                gfx.path()
+                    .at(vec2(0.0, 0.0)) // start here
+                    .thickness(4.0)
+                    .stroke_color(Color::BLACK)
+                    .steps(&[
+                        PathStep::LineTo(vec2(100.0, 0.0)),
+                        PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
+                        PathStep::CubicBezierTo(vec2(100.0, 100.0), vec2(0.0, 100.0), vec2(0.0, 0.0)),
+                    ]);
 
+                // -------------------------
+                // 2️⃣ Closed filled shape
+                // -------------------------
+                gfx.path()
+                    .at(vec2(0.0, 0.0))
+                    .thickness(3.0)
+                    .stroke_color(Color::BLACK)
+                    .fill_color(Color::BLUE)
+                    .steps(&[
+                        PathStep::LineTo(vec2(50.0, 0.0)),
+                        PathStep::LineTo(vec2(50.0, 50.0)),
+                        PathStep::LineTo(vec2(0.0, 50.0)),
+                        PathStep::LineTo(vec2(0.0, 0.0)), // closes the square
+                    ]);
 
+                // -------------------------
+                // 3️⃣ Looped cubic/quad curve
+                // -------------------------
+            let radius = 100.0;
+            let center = vec2(200.0, 200.0); // arbitrary position
 
-            gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
+            // magic constant for approximating a circle with cubic Beziers
+            let kappa = 0.552284749831; // ~4*(√2-1)/3
 
-
-
-
-
-
-
-            if state.enemies.is_empty() {
-                state.wave += 1;
-                if state.wave.is_multiple_of(3) {
-                    state.hp *= 1.1;
-                    state.spread = (state.spread + 1).min(20);
-                }
-                state.fire_rate += 0.1;
-                state.enemies = spawn_wave(
-                    state.player.rect.position,
-                    (state.wave + 2) * 3,
-                    (
-                        50. + state.wave as f32 * 3.0,
-                        125. + state.wave as f32 * 3.0,
+            gfx.path()
+                .at(center + vec2(0.0, -radius)) // top of circle
+                .thickness(4.0)
+                .stroke_color(Color::BLACK)
+                .fill_color(Color::BLUE)
+                .steps(&[
+                    // top-right
+                    PathStep::CubicBezierTo(
+                        center + vec2(radius * kappa, -radius),
+                        center + vec2(radius, -radius * kappa),
+                        center + vec2(radius, 0.0),
                     ),
-                    state.hp,
-                );
-            }
+                    // bottom-right
+                    PathStep::CubicBezierTo(
+                        center + vec2(radius, radius * kappa),
+                        center + vec2(radius * kappa, radius),
+                        center + vec2(0.0, radius),
+                    ),
+                    // bottom-left
+                    PathStep::CubicBezierTo(
+                        center + vec2(-radius * kappa, radius),
+                        center + vec2(-radius, radius * kappa),
+                        center + vec2(-radius, 0.0),
+                    ),
+                    // top-left
+                    PathStep::CubicBezierTo(
+                        center + vec2(-radius, -radius * kappa),
+                        center + vec2(-radius * kappa, -radius),
+                        center + vec2(0.0, -radius),
+                    ),
+                ]);
 
-            if state.minimap.is_some() {
-                let screen_pos = vec2(screen_size.x - 210.0, 10.0);
-                let world_pos = gfx.camera().screen_to_world(screen_pos);
 
-                gfx.rect()
-                    .at(world_pos)
-                    .size(vec2(200.0, 200.0))
-                    .texture(state.minimap_tex);
-            }
+            let center = vec2(400.0, 100.0); // arbitrary positi
+
+            gfx.path()
+                .at(center + vec2(0.0, -radius)) // top of circle
+                .thickness(4.0)
+                .stroke_color(Color::BLACK)
+                .fill_color(Color::GREEN)
+                .steps(&[
+                    // top-right
+                    PathStep::CubicBezierTo(
+                        center + vec2(radius * kappa, -radius),
+                        center + vec2(radius, -radius * kappa),
+                        center + vec2(radius, 0.0),
+                    ),
+                    // bottom-right
+                    PathStep::CubicBezierTo(
+                        center + vec2(radius, radius * kappa),
+                        center + vec2(radius * kappa, radius),
+                        center + vec2(0.0, radius),
+                    ),
+                    // bottom-left
+                    PathStep::CubicBezierTo(
+                        center + vec2(-radius * kappa, radius),
+                        center + vec2(-radius, radius * kappa),
+                        center + vec2(-radius, 0.0),
+                    ),
+                    // top-left
+                    PathStep::CubicBezierTo(
+                        center + vec2(-radius, -radius * kappa),
+                        center + vec2(-radius * kappa, -radius),
+                        center + vec2(0.0, -radius),
+                    ),
+                ]);
+
+
+
+                // -------------------------
+                // 4️⃣ Thick stroked arc-ish shape
+                // -------------------------
+                gfx.path()
+                    .at(vec2(300.0, 50.0))
+                    .thickness(8.0)
+                    .stroke_color(Color::GREEN)
+                    .steps(&[
+                        PathStep::QuadBezierTo(vec2(350.0, 0.0), vec2(400.0, 50.0)),
+                        PathStep::QuadBezierTo(vec2(450.0, 100.0), vec2(400.0, 150.0)),
+                        PathStep::QuadBezierTo(vec2(350.0, 200.0), vec2(300.0, 150.0)),
+                    ]);
+
+              //  -------------------------
+               //  Flower petals
+             //   -------------------------
+                let petals = [
+                    (vec2(500.0, 100.0), vec2(520.0, 50.0), vec2(580.0, 50.0), vec2(600.0, 100.0)),
+                    (vec2(600.0, 100.0), vec2(580.0, 150.0), vec2(520.0, 150.0), vec2(500.0, 100.0)),
+                ];
+
+                for petal in petals {
+                    gfx.path()
+                        .at(petal.0)
+                        .thickness(2.0)
+                        .stroke_color(Color::GREEN)
+                        .fill_color(Color::BLUE)
+                        .steps(&[
+                            PathStep::CubicBezierTo(petal.1, petal.2, petal.3),
+                        ]);
+                }
+
+                // -------------------------
+                // 6️⃣ Grid of small Beziers
+                // -------------------------
+                for i in 0..5 {
+                    for j in 0..5 {
+                        let x = 50.0 + i as f32 * 40.0;
+                        let y = 300.0 + j as f32 * 40.0;
+                        gfx.path()
+                            .at(vec2(x, y))
+                            .thickness(1.0)
+                            .stroke_color(Color::GREEN)
+                            .steps(&[
+                                PathStep::CubicBezierTo(vec2(x + 10.0, y - 10.0), vec2(x + 30.0, y + 10.0), vec2(x + 40.0, y)),
+                            ]);
+                    }
+                }
+
+
+
+
+             gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
+
+
+
+
         },
     );
 }

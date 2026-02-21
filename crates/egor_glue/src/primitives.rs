@@ -558,7 +558,7 @@ impl Drop for PathBuilder<'_> {
 
             // Convex fan triangulation
             for i in 0..idx_count {
-                indices[i] = geometry.indices[i];
+                indices[i] = base + geometry.indices[i];
             }
         }
     }
