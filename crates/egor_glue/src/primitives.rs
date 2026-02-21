@@ -1,7 +1,9 @@
 use egui::Pos2;
 use egor_render::{GeometryBatch, vertex::Vertex};
 use glam::{Mat2, Vec2, vec2};
-use lyon::path::Path;
+use lyon::geom::Box2D;
+use lyon::geom::euclid::Point2D;
+use lyon::path::{Path, Winding};
 use lyon::path::path_buffer::Builder;
 use crate::{color::Color, math::Rect};
 
@@ -386,17 +388,24 @@ impl Drop for PolylineBuilder<'_> {
 
 
 
-
-
+pub enum Shape {
+    Path(Vec<PathStep>),     // line/quadratic/cubic steps
+    Rect(Vec2),
+    Circle { center: Vec2, radius: f32 },
+    // Ellipse, Arc, etc. later
+}
 
 #[derive(Copy, Clone, Debug)]
 pub enum PathStep {
+    Begin(Vec2),
     LineTo(Vec2),
     QuadBezierTo(Vec2, Vec2),
     CubicBezierTo(Vec2, Vec2, Vec2),
+    // Rect(Rect),
+
 }
 
-pub struct PathBuilder<'a> {
+pub struct ShapeBuilder<'a> {
     batch: &'a mut PrimitiveBatch,
     shader_id: Option<usize>,
     position: Vec2,
@@ -404,10 +413,10 @@ pub struct PathBuilder<'a> {
     thickness: f32,
     stroke_color: Option<Color>,
     fill_color: Option<Color>,
-    steps: Vec<PathStep>,
+    shape: Option<Shape>,
 }
 
-impl<'a> PathBuilder<'a> {
+impl<'a> ShapeBuilder<'a> {
     pub(crate) fn new(batch: &'a mut PrimitiveBatch, shader_id: Option<usize>) -> Self {
         Self {
             batch,
@@ -417,7 +426,7 @@ impl<'a> PathBuilder<'a> {
             thickness: 1.0,
             stroke_color: None,
             fill_color: None,
-            steps: Vec::new(),
+            shape: None,
         }
     }
 
@@ -446,14 +455,14 @@ impl<'a> PathBuilder<'a> {
         self.fill_color = Some(color);
         self
     }
-    /// Sets the steps of the path
-    pub fn steps(mut self, steps: &[PathStep]) -> Self {
-        self.steps.extend_from_slice(steps);
+    /// Sets the shape to be drawn
+    pub fn shape(mut self, shape: Shape) -> Self {
+        self.shape = Some(shape);
         self
     }
 }
 
-impl Drop for PathBuilder<'_> {
+impl Drop for ShapeBuilder<'_> {
     fn drop(&mut self) {
 
 
@@ -463,17 +472,38 @@ impl Drop for PathBuilder<'_> {
 
         let mut builder = Path::builder();
 
-        builder.begin(point(self.position.x, self.position.y));
+      //  builder.begin(point(self.position.x, self.position.y));
 
-        for step in &self.steps {
-            match step {
-                PathStep::LineTo(v) => { builder.line_to(point(v.x, v.y));}
-                PathStep::QuadBezierTo(v1, v2) => { builder.quadratic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y));}
-                PathStep::CubicBezierTo(v1, v2, v3) => { builder.cubic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y), point(v3.x, v3.y));}
+
+
+        if let Some(shape) = &self.shape {
+            match shape {
+                Shape::Path(steps) => {
+                    for step in steps {
+                        match step {
+                            PathStep::Begin(v) => { builder.begin(point(v.x, v.y));}
+                            PathStep::LineTo(v) => { builder.line_to(point(v.x, v.y));}
+                            PathStep::QuadBezierTo(v1, v2) => { builder.quadratic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y));}
+                            PathStep::CubicBezierTo(v1, v2, v3) => { builder.cubic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y), point(v3.x, v3.y));}
+                        }
+                    }
+
+                    builder.end(true);
+                }
+                Shape::Rect(v) => {
+                    builder.add_rectangle(&Box2D::new(Point2D::new(self.position.x, self.position.y), Point2D::new(self.position.x + v.x, self.position.y + v.y)), Winding::Positive);
+                }
+                Shape::Circle { .. } => {
+
+                }
             }
         }
 
-        builder.end(true);
+
+
+
+
+
         let path = builder.build();
 
         let mut geometry: VertexBuffers<Vertex, u16> = VertexBuffers::new();
@@ -550,7 +580,13 @@ impl Drop for PathBuilder<'_> {
                 .allocate(vert_count, idx_count, None, self.shader_id)
         {
             let mut vi = 0;
-            for (vo) in geometry.vertices {
+            for (mut vo) in geometry.vertices {
+
+                let mut p: Vec2 = vo.position.into();
+
+                p = rot * p + self.position;
+                vo.position = p.to_array();
+
                // let world = rot * *p + center;
                 verts[vi] = vo;  //Vertex::new(world.into(), color, [0.0, 0.0]);
                 vi+=1;

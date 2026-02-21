@@ -9,9 +9,7 @@ use egor::{
     math::{Rect, Vec2, vec2},
     render::{Align, Color, OffscreenTarget},
 };
-use egor::app::egui::epaint::Vertex;
-use egor::app::egui::Pos2;
-use egor::render::PathStep;
+use egor::render::{PathStep, Shape};
 use crate::{animation::SpriteAnim, tilemap::EgorMap};
 
 const PLAYER_SIZE: f32 = 64.0;
@@ -166,8 +164,8 @@ fn main() {
 
             let screen_size = gfx.screen_size();
 
-            gfx.camera().center(state.player.rect.position, screen_size);
-            gfx.clear(Color::WHITE);
+          //  gfx.camera().center(state.player.rect.position, screen_size);
+            gfx.clear(Color::BLACK);
 
 
 
@@ -218,179 +216,126 @@ fn main() {
 
 
 
-            gfx.path()
-                .thickness(4.0)
-                .stroke_color(Color::BLACK)
-                // .fill_color(Color::BLUE)
-                .steps(&[
-                    PathStep::LineTo(vec2(100.0, 0.0)),
-                    PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
-                    PathStep::CubicBezierTo(vec2(100.0, 100.0), vec2(0.0, 100.0), vec2(0.0, 0.0)),
-                ]);
+            // gfx.shape()
+            //     .at(vec2(300.0, 0.0))
+            //     .thickness(4.0)
+            //     .stroke_color(Color::new([1.0, 0.25, 0.0, 1.0]))
+            //     .fill_color(Color::BLUE)
+            //     .shape(Shape::Path(
+            //         vec![
+            //             PathStep::Begin(vec2(0.0, 0.0)),
+            //             PathStep::LineTo(vec2(100.0, 0.0)),
+            //             PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
+            //             PathStep::CubicBezierTo(vec2(100.0, 100.0), vec2(0.0, 100.0), vec2(0.0, 0.0)),
+            //          ]
+            //     ));
+            //
+            //
+            //
+            // gfx.shape()
+            //     .thickness(4.0)
+            //     .stroke_color(Color::WHITE)
+            //     .fill_color(Color::RED)
+            //     .shape(Shape::Rect(vec2(200.0, 300.0)));
+            //
 
 
 
 
 
-                // -------------------------
-                // 1️⃣ Simple stroked shape
-                // -------------------------
-                gfx.path()
-                    .at(vec2(0.0, 0.0)) // start here
-                    .thickness(4.0)
-                    .stroke_color(Color::BLACK)
-                    .steps(&[
-                        PathStep::LineTo(vec2(100.0, 0.0)),
-                        PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
-                        PathStep::CubicBezierTo(vec2(100.0, 100.0), vec2(0.0, 100.0), vec2(0.0, 0.0)),
-                    ]);
 
-                // -------------------------
-                // 2️⃣ Closed filled shape
-                // -------------------------
-                gfx.path()
-                    .at(vec2(0.0, 0.0))
-                    .thickness(3.0)
-                    .stroke_color(Color::BLACK)
-                    .fill_color(Color::BLUE)
-                    .steps(&[
-                        PathStep::LineTo(vec2(50.0, 0.0)),
-                        PathStep::LineTo(vec2(50.0, 50.0)),
-                        PathStep::LineTo(vec2(0.0, 50.0)),
-                        PathStep::LineTo(vec2(0.0, 0.0)), // closes the square
-                    ]);
+
+                let center = vec2(400.0, 300.0); // position of sunflower on screen
+                let center_radius = 40.0;
+                let petal_length = 80.0;
+                let petal_width = 30.0;
+                let petal_count = 16;
 
                 // -------------------------
-                // 3️⃣ Looped cubic/quad curve
+                // 1️⃣ Flower center
                 // -------------------------
-            let radius = 100.0;
-            let center = vec2(200.0, 200.0); // arbitrary position
-
-            // magic constant for approximating a circle with cubic Beziers
-            let kappa = 0.552284749831; // ~4*(√2-1)/3
-
-            gfx.path()
-                .at(center + vec2(0.0, -radius)) // top of circle
-                .thickness(4.0)
-                .stroke_color(Color::BLACK)
-                .fill_color(Color::BLUE)
-                .steps(&[
-                    // top-right
-                    PathStep::CubicBezierTo(
-                        center + vec2(radius * kappa, -radius),
-                        center + vec2(radius, -radius * kappa),
-                        center + vec2(radius, 0.0),
-                    ),
-                    // bottom-right
-                    PathStep::CubicBezierTo(
-                        center + vec2(radius, radius * kappa),
-                        center + vec2(radius * kappa, radius),
-                        center + vec2(0.0, radius),
-                    ),
-                    // bottom-left
-                    PathStep::CubicBezierTo(
-                        center + vec2(-radius * kappa, radius),
-                        center + vec2(-radius, radius * kappa),
-                        center + vec2(-radius, 0.0),
-                    ),
-                    // top-left
-                    PathStep::CubicBezierTo(
-                        center + vec2(-radius, -radius * kappa),
-                        center + vec2(-radius * kappa, -radius),
-                        center + vec2(0.0, -radius),
-                    ),
-                ]);
-
-
-            let center = vec2(400.0, 100.0); // arbitrary positi
-
-            gfx.path()
-                .at(center + vec2(0.0, -radius)) // top of circle
-                .thickness(4.0)
-                .stroke_color(Color::BLACK)
-                .fill_color(Color::GREEN)
-                .steps(&[
-                    // top-right
-                    PathStep::CubicBezierTo(
-                        center + vec2(radius * kappa, -radius),
-                        center + vec2(radius, -radius * kappa),
-                        center + vec2(radius, 0.0),
-                    ),
-                    // bottom-right
-                    PathStep::CubicBezierTo(
-                        center + vec2(radius, radius * kappa),
-                        center + vec2(radius * kappa, radius),
-                        center + vec2(0.0, radius),
-                    ),
-                    // bottom-left
-                    PathStep::CubicBezierTo(
-                        center + vec2(-radius * kappa, radius),
-                        center + vec2(-radius, radius * kappa),
-                        center + vec2(-radius, 0.0),
-                    ),
-                    // top-left
-                    PathStep::CubicBezierTo(
-                        center + vec2(-radius, -radius * kappa),
-                        center + vec2(-radius * kappa, -radius),
-                        center + vec2(0.0, -radius),
-                    ),
-                ]);
-
-
+                // gfx.shape()
+                //     .at(center)
+                //     .thickness(2.0)
+                //     .stroke_color(Color::BLACK)
+                //     .fill_color(Color::new([1.0, 0.6, 0.0, 1.0])) // orange
+                //     .shape(Shape::Circle(center_radius));
 
                 // -------------------------
-                // 4️⃣ Thick stroked arc-ish shape
+                // 2️⃣ Petals
                 // -------------------------
-                gfx.path()
-                    .at(vec2(300.0, 50.0))
-                    .thickness(8.0)
-                    .stroke_color(Color::GREEN)
-                    .steps(&[
-                        PathStep::QuadBezierTo(vec2(350.0, 0.0), vec2(400.0, 50.0)),
-                        PathStep::QuadBezierTo(vec2(450.0, 100.0), vec2(400.0, 150.0)),
-                        PathStep::QuadBezierTo(vec2(350.0, 200.0), vec2(300.0, 150.0)),
-                    ]);
+                for i in 0..petal_count {
+                    let angle = (i as f32) / (petal_count as f32) * std::f32::consts::TAU;
+                    let sin = angle.sin();
+                    let cos = angle.cos();
 
-              //  -------------------------
-               //  Flower petals
-             //   -------------------------
-                let petals = [
-                    (vec2(500.0, 100.0), vec2(520.0, 50.0), vec2(580.0, 50.0), vec2(600.0, 100.0)),
-                    (vec2(600.0, 100.0), vec2(580.0, 150.0), vec2(520.0, 150.0), vec2(500.0, 100.0)),
-                ];
+                    // Define the petal shape relative to the center
+                    let tip = vec2(cos * petal_length, sin * petal_length);
+                    let control1 = vec2(cos * (petal_length * 0.3) - sin * (petal_width * 0.5),
+                                        sin * (petal_length * 0.3) + cos * (petal_width * 0.5));
+                    let control2 = vec2(cos * (petal_length * 0.7) - sin * (petal_width * 0.5),
+                                        sin * (petal_length * 0.7) + cos * (petal_width * 0.5));
 
-                for petal in petals {
-                    gfx.path()
-                        .at(petal.0)
+                    gfx.shape()
+                        .at(center)
                         .thickness(2.0)
-                        .stroke_color(Color::GREEN)
-                        .fill_color(Color::BLUE)
-                        .steps(&[
-                            PathStep::CubicBezierTo(petal.1, petal.2, petal.3),
-                        ]);
+                        .stroke_color(Color::BLACK)
+                        .fill_color(Color::new([0.8, 0.8, 0.1, 1.0]))
+                        .shape(Shape::Path(vec![
+                            PathStep::Begin(vec2(0.0, 0.0)),        // start at flower center
+                            PathStep::CubicBezierTo(control1, control2, tip),
+                            PathStep::CubicBezierTo(control2 * -1.0, control1 * -1.0, vec2(0.0, 0.0)), // back to center
+
+                        ]));
                 }
 
                 // -------------------------
-                // 6️⃣ Grid of small Beziers
+                // 3️⃣ Stem
                 // -------------------------
-                for i in 0..5 {
-                    for j in 0..5 {
-                        let x = 50.0 + i as f32 * 40.0;
-                        let y = 300.0 + j as f32 * 40.0;
-                        gfx.path()
-                            .at(vec2(x, y))
-                            .thickness(1.0)
-                            .stroke_color(Color::GREEN)
-                            .steps(&[
-                                PathStep::CubicBezierTo(vec2(x + 10.0, y - 10.0), vec2(x + 30.0, y + 10.0), vec2(x + 40.0, y)),
-                            ]);
-                    }
+                gfx.shape()
+                    .at(center)
+                    .thickness(10.0)
+                    .stroke_color(Color::new([0.0, 0.5, 0.0, 1.0]))
+                    .fill_color(Color::new([0.0, 0.5, 0.0, 1.0]))
+                    .shape(Shape::Path(vec![
+                        PathStep::Begin(vec2(0.0, center_radius)),
+                        PathStep::LineTo(vec2(0.0, center_radius + 150.0)),
+                    ]));
+
+                // -------------------------
+                // 4️⃣ Optional leaves
+                // -------------------------
+                let leaf_offsets = [vec2(-20.0, 80.0), vec2(20.0, 120.0)];
+                for leaf in leaf_offsets {
+                    gfx.shape()
+                        .at(center)
+                        .thickness(2.0)
+                        .stroke_color(Color::new([0.0, 0.4, 0.0, 1.0]))
+                        .fill_color(Color::new([0.0, 0.8, 0.0, 1.0]))
+                        .shape(Shape::Path(vec![
+                            PathStep::Begin(leaf),
+                            PathStep::QuadBezierTo(leaf + vec2(40.0, 20.0), leaf + vec2(0.0, 40.0)),
+                            PathStep::QuadBezierTo(leaf + vec2(-40.0, 20.0), leaf),
+
+                        ]));
                 }
 
 
 
 
-             gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
+
+
+
+
+
+
+
+
+
+
+
+
+         //    gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
 
 
 

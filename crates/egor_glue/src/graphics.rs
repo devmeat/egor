@@ -7,7 +7,7 @@ use crate::{
     primitives::{PolygonBuilder, PolylineBuilder, PrimitiveBatch, RectangleBuilder},
     text::{TextBuilder, TextRenderer},
 };
-use crate::primitives::PathBuilder;
+use crate::primitives::ShapeBuilder;
 
 /// High-level 2D drawing interface that simplifies the [`Renderer`]
 pub struct Graphics<'a> {
@@ -134,8 +134,8 @@ impl<'a> Graphics<'a> {
     }
 
 
-    pub fn path(&mut self) -> PathBuilder<'_> {
-        PathBuilder::new(&mut self.batch, self.current_shader)
+    pub fn shape(&mut self) -> ShapeBuilder<'_> {
+        ShapeBuilder::new(&mut self.batch, self.current_shader)
     }
 
 
