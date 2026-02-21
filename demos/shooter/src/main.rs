@@ -258,9 +258,11 @@ fn main() {
 
 
             gfx.path()
-                .color(Color::BLUE)
+                .thickness(4.0)
+                .stroke_color(Color::BLACK)
+                .fill_color(Color::BLUE)
                 .steps(&[
-                    PathStep::Begin(vec2(0.0,0.0)),
+                    // PathStep::Begin(vec2(0.0,0.0)),
                     PathStep::LineTo(vec2(100.0, 0.0)),
                     PathStep::QuadBezierTo(vec2(200.0, 0.0), vec2(200.0, 100.0)),
                     PathStep::CubicBezierTo(vec2(100.0, 100.0), vec2(0.0, 100.0), vec2(0.0, 0.0)),

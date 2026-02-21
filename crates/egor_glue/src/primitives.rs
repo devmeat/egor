@@ -391,32 +391,20 @@ impl Drop for PolylineBuilder<'_> {
 
 #[derive(Copy, Clone, Debug)]
 pub enum PathStep {
-    Begin(Vec2),
-    MoveTo(Vec2),
     LineTo(Vec2),
     QuadBezierTo(Vec2, Vec2),
     CubicBezierTo(Vec2, Vec2, Vec2),
 }
-
-
-
-
-
-
-
 
 pub struct PathBuilder<'a> {
     batch: &'a mut PrimitiveBatch,
     shader_id: Option<usize>,
     position: Vec2,
     rotation: f32,
-    points: Vec<Vec2>,
-    radius: f32,
-    segments: usize,
-    color: Color,
+    thickness: f32,
+    stroke_color: Option<Color>,
+    fill_color: Option<Color>,
     steps: Vec<PathStep>,
-
-    // pub builder: Builder,
 }
 
 impl<'a> PathBuilder<'a> {
@@ -426,32 +414,12 @@ impl<'a> PathBuilder<'a> {
             shader_id,
             position: Vec2::ZERO,
             rotation: 0.0,
-            points: Vec::new(),
-            radius: 10.0,
-            segments: 3,
-            color: Color::WHITE,
-
-            // builder: Path::builder(),
-            // builder: lyon::path::path::Builder,
+            thickness: 1.0,
+            stroke_color: None,
+            fill_color: None,
             steps: Vec::new(),
         }
     }
-
-    // pub fn begin(mut self, pos: Vec2) -> Self {
-    //
-    // }
-
-
-
-
-
-
-
-
-
-
-
-
 
     /// Sets the world-space position of the polygon
     pub fn at(mut self, pos: Vec2) -> Self {
@@ -463,30 +431,22 @@ impl<'a> PathBuilder<'a> {
         self.rotation = angle;
         self
     }
-    /// Set explicit points for the polygon
-    pub fn points(mut self, pts: &[Vec2]) -> Self {
-        self.points.clear();
-        self.points.extend_from_slice(pts);
+    /// Sets the stroke thickness in world units
+    pub fn thickness(mut self, t: f32) -> Self {
+        self.thickness = t.max(0.001);
         self
     }
-    /// Set radius for a circle or regular n-gon
-    pub fn radius(mut self, r: f32) -> Self {
-        self.radius = r;
+    /// Sets the stroke color of the path
+    pub fn stroke_color(mut self, color: Color) -> Self {
+        self.stroke_color = Some(color);
         self
     }
-    /// Set number of segments for circles/n-gons
-    pub fn segments(mut self, segments: usize) -> Self {
-        self.segments = segments.max(3);
+    /// Sets the fill color of the path
+    pub fn fill_color(mut self, color: Color) -> Self {
+        self.fill_color = Some(color);
         self
     }
-    /// Sets the color of the polygon
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
-        self
-    }
-
-
-
+    /// Sets the steps of the path
     pub fn steps(mut self, steps: &[PathStep]) -> Self {
         self.steps.extend_from_slice(steps);
         self
@@ -497,21 +457,16 @@ impl Drop for PathBuilder<'_> {
     fn drop(&mut self) {
 
 
-
-
-        let color = self.color.components();
-
-
         use lyon::math::point;
         use lyon::path::Path;
         use lyon::tessellation::*;
 
         let mut builder = Path::builder();
 
+        builder.begin(point(self.position.x, self.position.y));
+
         for step in &self.steps {
             match step {
-                PathStep::Begin(v) => { builder.begin(point(v.x, v.y));}
-                PathStep::MoveTo(v) => {}
                 PathStep::LineTo(v) => { builder.line_to(point(v.x, v.y));}
                 PathStep::QuadBezierTo(v1, v2) => { builder.quadratic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y));}
                 PathStep::CubicBezierTo(v1, v2, v3) => { builder.cubic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y), point(v3.x, v3.y));}
@@ -522,22 +477,62 @@ impl Drop for PathBuilder<'_> {
         let path = builder.build();
 
         let mut geometry: VertexBuffers<Vertex, u16> = VertexBuffers::new();
-        let mut tessellator = FillTessellator::new();
-        {
-            // Compute the tessellation.
-            tessellator.tessellate_path(
-                &path,
-                &FillOptions::default(),
-                &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
-                    let [x, y] = vertex.position().to_array();
-                    Vertex {
-                        position: [x, y],
-                        color,
-                        tex_coords: [0.0, 0.0],
-                    }
-                }),
-            ).unwrap();
+
+        if let Some(fill_color) = self.fill_color {
+            let mut tessellator = FillTessellator::new();
+            {
+                tessellator.tessellate_path(
+                    &path,
+                    &FillOptions::default(),
+                    &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
+                        let [x, y] = vertex.position().to_array();
+                        Vertex {
+                            position: [x, y],
+                            color: fill_color.components(),
+                            tex_coords: [0.0, 0.0],
+                        }
+                    }),
+                ).unwrap();
+            }
         }
+
+        if let Some(stroke_color) = self.stroke_color {
+            let mut tessellator = StrokeTessellator::new();
+            {
+                tessellator.tessellate_path(
+                    &path,
+                    &StrokeOptions::default().with_line_width(self.thickness),
+                    &mut BuffersBuilder::new(&mut geometry, |vertex: StrokeVertex| {
+                        let [x, y] = vertex.position().to_array();
+                        Vertex {
+                            position: [x, y],
+                            color: stroke_color.components(),
+                            tex_coords: [0.0, 0.0],
+                        }
+                    }),
+                ).unwrap();
+            }
+        }
+
+
+        // let mut buffers: VertexBuffers<Point, u16> = VertexBuffers::new();
+        //
+        // {
+        //     // Create the destination vertex and index buffers.
+        //     let mut vertex_builder = simple_builder(&mut buffers);
+        //
+        //     // Create the tessellator.
+        //     let mut tessellator = StrokeTessellator::new();
+        //
+        //     // Compute the tessellation.
+        //     tessellator.tessellate(
+        //         &path,
+        //         &StrokeOptions::default(),
+        //         &mut vertex_builder
+        //     );
+        // }
+        //
+
 
 
 
@@ -545,7 +540,7 @@ impl Drop for PathBuilder<'_> {
 
         let rot = Mat2::from_angle(self.rotation);
         let center = self.position;
-        let color = self.color.components();
+        //let color = self.color.components();
 
         let vert_count = geometry.vertices.len();
         let idx_count = geometry.indices.len();
