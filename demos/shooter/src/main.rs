@@ -51,6 +51,7 @@ struct GameState {
     fire_rate: f32,
     spread: usize,
     game_over: bool,
+    rotation: f32,
 }
 
 fn spawn_wave(position: Vec2, count: usize, speed: (f32, f32), hp: f32) -> Vec<Zombie> {
@@ -136,6 +137,7 @@ fn main() {
         fire_rate: 2.0,
         spread: 1,
         game_over: false,
+        rotation: 0.0,
     };
 
     App::new().title("Egor Shooter Demo").run(
@@ -242,95 +244,49 @@ fn main() {
 
 
 
+            let speed = 1.2;
 
 
+                let position = vec2(500.0, 300.0);
 
-                let center = vec2(400.0, 300.0); // position of sunflower on screen
-                let center_radius = 40.0;
-                let petal_length = 80.0;
-                let petal_width = 30.0;
-                let petal_count = 16;
+                let blade_length = 120.0;
+                let blade_width = 40.0;
 
+                // -----------------------------------------
+                // 1️⃣ Blades (one shape, rotated)
+                // -----------------------------------------
+                for i in 0..4 {
+                    let base_angle = i as f32 * std::f32::consts::FRAC_PI_2;
 
+                    state.rotation = state.rotation + speed * timer.delta + base_angle;
 
-
-
-                // -------------------------
-                // 3️⃣ Stem
-                // -------------------------
-                gfx.shape()
-                    .at(center)
-                    .thickness(10.0)
-                    .stroke_color(Color::new([0.0, 0.5, 0.0, 1.0]))
-                    .fill_color(Color::new([0.0, 0.5, 0.0, 1.0]))
-                    .shape(Shape::Path(vec![
-                        PathStep::Begin(vec2(0.0, center_radius)),
-                        PathStep::LineTo(vec2(0.0, center_radius + 150.0)),
-                    ]));
-
-                // -------------------------
-                // 4️⃣ Optional leaves
-                // -------------------------
-                let leaf_offsets = [vec2(-20.0, 80.0), vec2(20.0, 120.0)];
-                for leaf in leaf_offsets {
                     gfx.shape()
-                        .at(center)
+                        .at(position)
+                        .rotate(state.rotation) // <-- rotation test
                         .thickness(2.0)
-                        .stroke_color(Color::new([0.0, 0.4, 0.0, 1.0]))
-                        .fill_color(Color::new([0.0, 0.8, 0.0, 1.0]))
+                        .stroke_color(Color::BLACK)
+                        .fill_color(Color::new([0.9, 0.9, 0.9, 1.0]))
                         .shape(Shape::Path(vec![
-                            PathStep::Begin(leaf),
-                            PathStep::QuadBezierTo(leaf + vec2(40.0, 20.0), leaf + vec2(0.0, 40.0)),
-                            PathStep::QuadBezierTo(leaf + vec2(-40.0, 20.0), leaf),
-
+                            PathStep::Begin(vec2(0.0, -blade_width * 0.5)),
+                            PathStep::LineTo(vec2(blade_length, -blade_width * 0.5)),
+                            PathStep::LineTo(vec2(blade_length, blade_width * 0.5)),
+                            PathStep::LineTo(vec2(0.0, blade_width * 0.5)),
+                            PathStep::LineTo(vec2(0.0, -blade_width * 0.5)),
                         ]));
                 }
 
-
-            // -------------------------
-            // 2️⃣ Petals
-            // -------------------------
-            for i in 0..petal_count {
-                let angle = (i as f32) / (petal_count as f32) * std::f32::consts::TAU;
-                let sin = angle.sin();
-                let cos = angle.cos();
-
-                // Define the petal shape relative to the center
-                let tip = vec2(cos * petal_length, sin * petal_length);
-                let control1 = vec2(cos * (petal_length * 0.3) - sin * (petal_width * 0.5),
-                                    sin * (petal_length * 0.3) + cos * (petal_width * 0.5));
-                let control2 = vec2(cos * (petal_length * 0.7) - sin * (petal_width * 0.5),
-                                    sin * (petal_length * 0.7) + cos * (petal_width * 0.5));
-
+                // -----------------------------------------
+                // 2️⃣ Center hub (not rotated)
+                // -----------------------------------------
                 gfx.shape()
-                    .at(center)
-                    .thickness(2.0)
+                    .at(position)
+                    .thickness(3.0)
                     .stroke_color(Color::BLACK)
-                    .fill_color(Color::new([0.8, 0.8, 0.1, 1.0]))
-                    .shape(Shape::Path(vec![
-                        PathStep::Begin(vec2(0.0, 0.0)),        // start at flower center
-                        PathStep::CubicBezierTo(control1, control2, tip),
-                        PathStep::CubicBezierTo(control2 * -1.0, control1 * -1.0, vec2(0.0, 0.0)), // back to center
-
-                    ]));
-            }
-
-            // -------------------------
-            // 1️⃣ Flower center
-            // -------------------------
-            gfx.shape()
-                .at(center)
-                .thickness(2.0)
-                .stroke_color(Color::BLACK)
-                .fill_color(Color::new([1.0, 0.6, 0.0, 1.0])) // orange
-                .shape(Shape::Circle { center: Vec2::ZERO, radius: center_radius });
-
-
-
-
-
-
-
+                    .fill_color(Color::new([0.3, 0.3, 0.3, 1.0]))
+                    .shape(Shape::Circle {
+                        center: vec2(0.0, 0.0),
+                        radius: 30.0,
+                    });
 
 
 
