@@ -1,11 +1,11 @@
-use egui::Pos2;
-use egor_render::{GeometryBatch, vertex::Vertex};
-use glam::{Mat2, Vec2, vec2};
-use lyon::geom::{Box2D, Point};
-use lyon::geom::euclid::Point2D;
-use lyon::path::{Path, Winding};
-use lyon::path::path_buffer::Builder;
 use crate::{color::Color, math::Rect};
+use egor_render::{vertex::Vertex, GeometryBatch};
+use glam::{vec2, Mat2, Vec2};
+use lyon::geom::euclid::Point2D;
+use lyon::geom::{Box2D, Point};
+use lyon::path::Winding;
+
+const MIN_THICKNESS: f32 = 0.001;
 
 #[derive(Default)]
 struct BatchEntry {
@@ -308,7 +308,7 @@ impl<'a> PolylineBuilder<'a> {
     }
     /// Sets the stroke thickness in world units
     pub fn thickness(mut self, t: f32) -> Self {
-        self.thickness = t.max(0.001);
+        self.thickness = t.max(MIN_THICKNESS);
         self
     }
     /// Sets the color of the polyline
@@ -410,6 +410,7 @@ pub struct ShapeBuilder<'a> {
     shader_id: Option<usize>,
     position: Vec2,
     rotation: f32,
+    scale: Vec2,
     thickness: f32,
     stroke_color: Option<Color>,
     fill_color: Option<Color>,
@@ -423,6 +424,7 @@ impl<'a> ShapeBuilder<'a> {
             shader_id,
             position: Vec2::ZERO,
             rotation: 0.0,
+            scale: Vec2::ONE,
             thickness: 1.0,
             stroke_color: None,
             fill_color: None,
@@ -440,9 +442,14 @@ impl<'a> ShapeBuilder<'a> {
         self.rotation = angle;
         self
     }
+    /// Sets the scale of the path
+    pub fn scale(mut self, scale: Vec2) -> Self {
+        self.scale = scale;
+        self
+    }
     /// Sets the stroke thickness in world units
     pub fn thickness(mut self, t: f32) -> Self {
-        self.thickness = t.max(0.001);
+        self.thickness = t.max(MIN_THICKNESS);
         self
     }
     /// Sets the stroke color of the path
@@ -584,7 +591,7 @@ impl Drop for ShapeBuilder<'_> {
 
                 let mut p: Vec2 = vo.position.into();
 
-                p = rot * p + self.position;
+                p = rot * (self.scale * p) + self.position;
                 vo.position = p.to_array();
 
                // let world = rot * *p + center;
