@@ -389,8 +389,8 @@ impl Drop for PolylineBuilder<'_> {
 
 
 pub enum Shape {
-    Path(Vec<PathStep>),     // line/quadratic/cubic steps
-    Rect(Vec2),
+    Path { steps: Vec<PathStep> },     // line/quadratic/cubic steps
+    Rect { size: Vec2 },
     Circle { center: Vec2, radius: f32 },
     // Ellipse, Arc, etc. later
 }
@@ -478,7 +478,7 @@ impl Drop for ShapeBuilder<'_> {
 
         if let Some(shape) = &self.shape {
             match shape {
-                Shape::Path(steps) => {
+                Shape::Path { steps } => {
                     for step in steps {
                         match step {
                             PathStep::Begin(v) => { builder.begin(point(v.x, v.y));}
@@ -490,8 +490,8 @@ impl Drop for ShapeBuilder<'_> {
 
                     builder.end(true);
                 }
-                Shape::Rect(v) => {
-                    builder.add_rectangle(&Box2D::new(Point2D::new(self.position.x, self.position.y), Point2D::new(self.position.x + v.x, self.position.y + v.y)), Winding::Positive);
+                Shape::Rect { size } => {
+                    builder.add_rectangle(&Box2D::new(Point2D::new(self.position.x, self.position.y), Point2D::new(self.position.x + size.x, self.position.y + size.y)), Winding::Positive);
                 }
                 Shape::Circle { center, radius } => {
                     builder.add_circle(Point::new(center.x, center.y), *radius, Winding::Positive);

@@ -266,13 +266,13 @@ fn main() {
                         .thickness(2.0)
                         .stroke_color(Color::BLACK)
                         .fill_color(Color::new([0.9, 0.9, 0.9, 1.0]))
-                        .shape(Shape::Path(vec![
+                        .shape(Shape::Path { steps: vec![
                             PathStep::Begin(vec2(0.0, -blade_width * 0.5)),
                             PathStep::LineTo(vec2(blade_length, -blade_width * 0.5)),
                             PathStep::LineTo(vec2(blade_length, blade_width * 0.5)),
                             PathStep::LineTo(vec2(0.0, blade_width * 0.5)),
                             PathStep::LineTo(vec2(0.0, -blade_width * 0.5)),
-                        ]));
+                        ]});
                 }
 
                 // -----------------------------------------
