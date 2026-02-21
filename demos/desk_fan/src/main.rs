@@ -10,12 +10,11 @@ struct GameState {
 }
 
 fn main() {
-    let mut state = GameState {
-        rotation: 0.0,
-    };
+    let mut state = GameState { rotation: 0.0 };
 
-    App::new().title("Egor Desk Fan Demo").run(
-        move |FrameContext { gfx, timer, .. }| {
+    App::new()
+        .title("Egor Desk Fan Demo")
+        .run(move |FrameContext { gfx, timer, .. }| {
             gfx.clear(Color::BLACK);
 
             let speed = 5.8;
@@ -40,7 +39,7 @@ fn main() {
                         PathStep::LineTo(vec2(80.0, 40.0)),
                         PathStep::LineTo(vec2(-80.0, 40.0)),
                         PathStep::LineTo(vec2(-60.0, 0.0)),
-                    ]
+                    ],
                 });
 
             // STAND
@@ -52,7 +51,7 @@ fn main() {
                     steps: vec![
                         PathStep::Begin(vec2(0.0, 30.0)),
                         PathStep::LineTo(vec2(0.0, 200.0)),
-                    ]
+                    ],
                 });
 
             // BLADES
@@ -85,7 +84,7 @@ fn main() {
                             ),
                             PathStep::LineTo(vec2(0.0, r)),
                             PathStep::LineTo(vec2(0.0, -r)),
-                        ]
+                        ],
                     });
             }
 
@@ -100,6 +99,5 @@ fn main() {
                     center: vec2(0.0, 0.0),
                     radius: 30.0,
                 });
-        }
-    );
+        });
 }

@@ -3,14 +3,14 @@ mod tilemap;
 
 use rand::Rng;
 
+use crate::{animation::SpriteAnim, tilemap::EgorMap};
+use egor::render::{PathStep, Shape};
 use egor::{
     app::{App, FrameContext, WindowEvent, egui::Window},
     input::{KeyCode, MouseButton},
     math::{Rect, Vec2, vec2},
     render::{Align, Color, OffscreenTarget},
 };
-use egor::render::{PathStep, Shape};
-use crate::{animation::SpriteAnim, tilemap::EgorMap};
 
 const PLAYER_SIZE: f32 = 64.0;
 const BULLET_SIZE: Vec2 = vec2(5.0, 10.0);
@@ -149,7 +149,6 @@ fn main() {
                   events,
                   ..
               }| {
-
             if timer.frame == 0 {
                 state.map.load_tileset(
                     gfx,
@@ -166,19 +165,13 @@ fn main() {
 
             let screen_size = gfx.screen_size();
 
-          //  gfx.camera().center(state.player.rect.position, screen_size);
+            //  gfx.camera().center(state.player.rect.position, screen_size);
             gfx.clear(Color::BLACK);
-
-
 
             for e in &mut state.enemies {
                 let dir = (state.player.rect.position - e.rect.position).normalize_or_zero();
                 e.rect.translate(dir * e.speed * timer.delta);
             }
-
-
-
-
 
             let mut points = Vec::new();
 
@@ -193,8 +186,6 @@ fn main() {
 
                 points.push(Vec2::new(x, y));
             }
-
-
 
             // let mut values = Vec::new();
             //
@@ -213,10 +204,6 @@ fn main() {
             //
             //         points.push(Vec2::new(radius * values[i].sin(), radius * values[i].cos()));
             //     }
-
-
-
-
 
             // gfx.shape()
             //     .at(vec2(300.0, 0.0))
@@ -241,8 +228,6 @@ fn main() {
             //     .shape(Shape::Rect(vec2(200.0, 300.0)));
             //
 
-
-
             let speed = 5.8;
             state.rotation += speed * timer.delta;
 
@@ -265,7 +250,7 @@ fn main() {
                         PathStep::LineTo(vec2(80.0, 40.0)),
                         PathStep::LineTo(vec2(-80.0, 40.0)),
                         PathStep::LineTo(vec2(-60.0, 0.0)),
-                    ]
+                    ],
                 });
 
             // STAND
@@ -277,7 +262,7 @@ fn main() {
                     steps: vec![
                         PathStep::Begin(vec2(0.0, 30.0)),
                         PathStep::LineTo(vec2(0.0, 200.0)),
-                    ]
+                    ],
                 });
 
             // BLADES
@@ -300,10 +285,8 @@ fn main() {
                         steps: vec![
                             // Start bottom-left
                             PathStep::Begin(vec2(0.0, -r)),
-
                             // Straight bottom edge
                             PathStep::LineTo(vec2(tip_x - r, -r)),
-
                             // Rounded tip (bottom → top)
                             PathStep::CubicBezierTo(
                                 vec2(tip_x - r + r * k, -r),
@@ -315,15 +298,12 @@ fn main() {
                                 vec2(tip_x - r + r * k, r),
                                 vec2(tip_x - r, r),
                             ),
-
                             // Straight top edge back to base
                             PathStep::LineTo(vec2(0.0, r)),
-
                             // Close manually
                             PathStep::LineTo(vec2(0.0, -r)),
-                        ]
+                        ],
                     });
-
             }
 
             // CENTER HUB
@@ -338,13 +318,7 @@ fn main() {
                     radius: 30.0,
                 });
 
-
-
-         //    gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
-
-
-
-
+            //    gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
         },
     );
 }

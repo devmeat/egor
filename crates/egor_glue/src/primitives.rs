@@ -1,9 +1,12 @@
 use crate::{color::Color, math::Rect};
-use egor_render::{vertex::Vertex, GeometryBatch};
-use glam::{vec2, Mat2, Vec2};
+use egor_render::{GeometryBatch, vertex::Vertex};
+use glam::{Mat2, Vec2, vec2};
 use lyon::geom::euclid::Point2D;
 use lyon::geom::{Box2D, Point};
 use lyon::path::Winding;
+use lyon::math::point;
+use lyon::path::Path;
+use lyon::tessellation::*;
 
 const MIN_THICKNESS: f32 = 0.001;
 
@@ -377,22 +380,10 @@ impl Drop for PolylineBuilder<'_> {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
 pub enum Shape {
-    Path { steps: Vec<PathStep> },     // line/quadratic/cubic steps
+    Path { steps: Vec<PathStep> },
     Rect { size: Vec2 },
     Circle { center: Vec2, radius: f32 },
-    // Ellipse, Arc, etc. later
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -401,8 +392,6 @@ pub enum PathStep {
     LineTo(Vec2),
     QuadBezierTo(Vec2, Vec2),
     CubicBezierTo(Vec2, Vec2, Vec2),
-    // Rect(Rect),
-
 }
 
 pub struct ShapeBuilder<'a> {
@@ -471,34 +460,42 @@ impl<'a> ShapeBuilder<'a> {
 
 impl Drop for ShapeBuilder<'_> {
     fn drop(&mut self) {
-
-
-        use lyon::math::point;
-        use lyon::path::Path;
-        use lyon::tessellation::*;
-
         let mut builder = Path::builder();
-
-      //  builder.begin(point(self.position.x, self.position.y));
-
-
 
         if let Some(shape) = &self.shape {
             match shape {
                 Shape::Path { steps } => {
                     for step in steps {
                         match step {
-                            PathStep::Begin(v) => { builder.begin(point(v.x, v.y));}
-                            PathStep::LineTo(v) => { builder.line_to(point(v.x, v.y));}
-                            PathStep::QuadBezierTo(v1, v2) => { builder.quadratic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y));}
-                            PathStep::CubicBezierTo(v1, v2, v3) => { builder.cubic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y), point(v3.x, v3.y));}
+                            PathStep::Begin(v) => {
+                                builder.begin(point(v.x, v.y));
+                            }
+                            PathStep::LineTo(v) => {
+                                builder.line_to(point(v.x, v.y));
+                            }
+                            PathStep::QuadBezierTo(v1, v2) => {
+                                builder.quadratic_bezier_to(point(v1.x, v1.y), point(v2.x, v2.y));
+                            }
+                            PathStep::CubicBezierTo(v1, v2, v3) => {
+                                builder.cubic_bezier_to(
+                                    point(v1.x, v1.y),
+                                    point(v2.x, v2.y),
+                                    point(v3.x, v3.y),
+                                );
+                            }
                         }
                     }
 
                     builder.end(true);
                 }
                 Shape::Rect { size } => {
-                    builder.add_rectangle(&Box2D::new(Point2D::new(self.position.x, self.position.y), Point2D::new(self.position.x + size.x, self.position.y + size.y)), Winding::Positive);
+                    builder.add_rectangle(
+                        &Box2D::new(
+                            Point2D::new(self.position.x, self.position.y),
+                            Point2D::new(self.position.x + size.x, self.position.y + size.y),
+                        ),
+                        Winding::Positive,
+                    );
                 }
                 Shape::Circle { center, radius } => {
                     builder.add_circle(Point::new(center.x, center.y), *radius, Winding::Positive);
@@ -506,78 +503,50 @@ impl Drop for ShapeBuilder<'_> {
             }
         }
 
-
-
-
-
-
         let path = builder.build();
-
         let mut geometry: VertexBuffers<Vertex, u16> = VertexBuffers::new();
 
         if let Some(fill_color) = self.fill_color {
             let mut tessellator = FillTessellator::new();
             {
-                tessellator.tessellate_path(
-                    &path,
-                    &FillOptions::default(),
-                    &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
-                        let [x, y] = vertex.position().to_array();
-                        Vertex {
-                            position: [x, y],
-                            color: fill_color.components(),
-                            tex_coords: [0.0, 0.0],
-                        }
-                    }),
-                ).unwrap();
+                tessellator
+                    .tessellate_path(
+                        &path,
+                        &FillOptions::default(),
+                        &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
+                            let [x, y] = vertex.position().to_array();
+                            Vertex {
+                                position: [x, y],
+                                color: fill_color.components(),
+                                tex_coords: [0.0, 0.0],
+                            }
+                        }),
+                    )
+                    .unwrap();
             }
         }
 
         if let Some(stroke_color) = self.stroke_color {
             let mut tessellator = StrokeTessellator::new();
             {
-                tessellator.tessellate_path(
-                    &path,
-                    &StrokeOptions::default().with_line_width(self.thickness),
-                    &mut BuffersBuilder::new(&mut geometry, |vertex: StrokeVertex| {
-                        let [x, y] = vertex.position().to_array();
-                        Vertex {
-                            position: [x, y],
-                            color: stroke_color.components(),
-                            tex_coords: [0.0, 0.0],
-                        }
-                    }),
-                ).unwrap();
+                tessellator
+                    .tessellate_path(
+                        &path,
+                        &StrokeOptions::default().with_line_width(self.thickness),
+                        &mut BuffersBuilder::new(&mut geometry, |vertex: StrokeVertex| {
+                            let [x, y] = vertex.position().to_array();
+                            Vertex {
+                                position: [x, y],
+                                color: stroke_color.components(),
+                                tex_coords: [0.0, 0.0],
+                            }
+                        }),
+                    )
+                    .unwrap();
             }
         }
 
-
-        // let mut buffers: VertexBuffers<Point, u16> = VertexBuffers::new();
-        //
-        // {
-        //     // Create the destination vertex and index buffers.
-        //     let mut vertex_builder = simple_builder(&mut buffers);
-        //
-        //     // Create the tessellator.
-        //     let mut tessellator = StrokeTessellator::new();
-        //
-        //     // Compute the tessellation.
-        //     tessellator.tessellate(
-        //         &path,
-        //         &StrokeOptions::default(),
-        //         &mut vertex_builder
-        //     );
-        // }
-        //
-
-
-
-
-
-
         let rot = Mat2::from_angle(self.rotation);
-        let center = self.position;
-        //let color = self.color.components();
 
         let vert_count = geometry.vertices.len();
         let idx_count = geometry.indices.len();
@@ -588,15 +557,14 @@ impl Drop for ShapeBuilder<'_> {
         {
             let mut vi = 0;
             for (mut vo) in geometry.vertices {
-
                 let mut p: Vec2 = vo.position.into();
 
                 p = rot * (self.scale * p) + self.position;
                 vo.position = p.to_array();
 
-               // let world = rot * *p + center;
-                verts[vi] = vo;  //Vertex::new(world.into(), color, [0.0, 0.0]);
-                vi+=1;
+                // let world = rot * *p + center;
+                verts[vi] = vo; //Vertex::new(world.into(), color, [0.0, 0.0]);
+                vi += 1;
             }
 
             // Convex fan triangulation
