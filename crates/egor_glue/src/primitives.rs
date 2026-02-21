@@ -1,7 +1,7 @@
 use egui::Pos2;
 use egor_render::{GeometryBatch, vertex::Vertex};
 use glam::{Mat2, Vec2, vec2};
-use lyon::geom::Box2D;
+use lyon::geom::{Box2D, Point};
 use lyon::geom::euclid::Point2D;
 use lyon::path::{Path, Winding};
 use lyon::path::path_buffer::Builder;
@@ -493,8 +493,8 @@ impl Drop for ShapeBuilder<'_> {
                 Shape::Rect(v) => {
                     builder.add_rectangle(&Box2D::new(Point2D::new(self.position.x, self.position.y), Point2D::new(self.position.x + v.x, self.position.y + v.y)), Winding::Positive);
                 }
-                Shape::Circle { .. } => {
-
+                Shape::Circle { center, radius } => {
+                    builder.add_circle(Point::new(center.x, center.y), *radius, Winding::Positive);
                 }
             }
         }

@@ -251,43 +251,9 @@ fn main() {
                 let petal_width = 30.0;
                 let petal_count = 16;
 
-                // -------------------------
-                // 1️⃣ Flower center
-                // -------------------------
-                // gfx.shape()
-                //     .at(center)
-                //     .thickness(2.0)
-                //     .stroke_color(Color::BLACK)
-                //     .fill_color(Color::new([1.0, 0.6, 0.0, 1.0])) // orange
-                //     .shape(Shape::Circle(center_radius));
 
-                // -------------------------
-                // 2️⃣ Petals
-                // -------------------------
-                for i in 0..petal_count {
-                    let angle = (i as f32) / (petal_count as f32) * std::f32::consts::TAU;
-                    let sin = angle.sin();
-                    let cos = angle.cos();
 
-                    // Define the petal shape relative to the center
-                    let tip = vec2(cos * petal_length, sin * petal_length);
-                    let control1 = vec2(cos * (petal_length * 0.3) - sin * (petal_width * 0.5),
-                                        sin * (petal_length * 0.3) + cos * (petal_width * 0.5));
-                    let control2 = vec2(cos * (petal_length * 0.7) - sin * (petal_width * 0.5),
-                                        sin * (petal_length * 0.7) + cos * (petal_width * 0.5));
 
-                    gfx.shape()
-                        .at(center)
-                        .thickness(2.0)
-                        .stroke_color(Color::BLACK)
-                        .fill_color(Color::new([0.8, 0.8, 0.1, 1.0]))
-                        .shape(Shape::Path(vec![
-                            PathStep::Begin(vec2(0.0, 0.0)),        // start at flower center
-                            PathStep::CubicBezierTo(control1, control2, tip),
-                            PathStep::CubicBezierTo(control2 * -1.0, control1 * -1.0, vec2(0.0, 0.0)), // back to center
-
-                        ]));
-                }
 
                 // -------------------------
                 // 3️⃣ Stem
@@ -321,9 +287,43 @@ fn main() {
                 }
 
 
+            // -------------------------
+            // 2️⃣ Petals
+            // -------------------------
+            for i in 0..petal_count {
+                let angle = (i as f32) / (petal_count as f32) * std::f32::consts::TAU;
+                let sin = angle.sin();
+                let cos = angle.cos();
 
+                // Define the petal shape relative to the center
+                let tip = vec2(cos * petal_length, sin * petal_length);
+                let control1 = vec2(cos * (petal_length * 0.3) - sin * (petal_width * 0.5),
+                                    sin * (petal_length * 0.3) + cos * (petal_width * 0.5));
+                let control2 = vec2(cos * (petal_length * 0.7) - sin * (petal_width * 0.5),
+                                    sin * (petal_length * 0.7) + cos * (petal_width * 0.5));
 
+                gfx.shape()
+                    .at(center)
+                    .thickness(2.0)
+                    .stroke_color(Color::BLACK)
+                    .fill_color(Color::new([0.8, 0.8, 0.1, 1.0]))
+                    .shape(Shape::Path(vec![
+                        PathStep::Begin(vec2(0.0, 0.0)),        // start at flower center
+                        PathStep::CubicBezierTo(control1, control2, tip),
+                        PathStep::CubicBezierTo(control2 * -1.0, control1 * -1.0, vec2(0.0, 0.0)), // back to center
 
+                    ]));
+            }
+
+            // -------------------------
+            // 1️⃣ Flower center
+            // -------------------------
+            gfx.shape()
+                .at(center)
+                .thickness(2.0)
+                .stroke_color(Color::BLACK)
+                .fill_color(Color::new([1.0, 0.6, 0.0, 1.0])) // orange
+                .shape(Shape::Circle { center: Vec2::ZERO, radius: center_radius });
 
 
 
