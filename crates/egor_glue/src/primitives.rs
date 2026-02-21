@@ -1,6 +1,7 @@
+use egui::Pos2;
 use egor_render::{GeometryBatch, vertex::Vertex};
 use glam::{Mat2, Vec2, vec2};
-
+use lyon::path::Path;
 use crate::{color::Color, math::Rect};
 
 #[derive(Default)]
@@ -368,6 +369,186 @@ impl Drop for PolylineBuilder<'_> {
                 ]);
                 ii += 6;
                 base += 4;
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+pub struct PathBuilder<'a> {
+    batch: &'a mut PrimitiveBatch,
+    shader_id: Option<usize>,
+    position: Vec2,
+    rotation: f32,
+    points: Vec<Vec2>,
+    radius: f32,
+    segments: usize,
+    color: Color,
+
+    path: Path
+}
+
+impl<'a> PathBuilder<'a> {
+    pub(crate) fn new(batch: &'a mut PrimitiveBatch, shader_id: Option<usize>) -> Self {
+        Self {
+            batch,
+            shader_id,
+            position: Vec2::ZERO,
+            rotation: 0.0,
+            points: Vec::new(),
+            radius: 10.0,
+            segments: 3,
+            color: Color::WHITE,
+            path: Path::default(),
+        }
+    }
+    /// Sets the world-space position of the polygon
+    pub fn at(mut self, pos: Vec2) -> Self {
+        self.position = pos;
+        self
+    }
+    /// Sets rotation in radians around the polygon's origin (default center)
+    pub fn rotate(mut self, angle: f32) -> Self {
+        self.rotation = angle;
+        self
+    }
+    /// Set explicit points for the polygon
+    pub fn points(mut self, pts: &[Vec2]) -> Self {
+        self.points.clear();
+        self.points.extend_from_slice(pts);
+        self
+    }
+    /// Set radius for a circle or regular n-gon
+    pub fn radius(mut self, r: f32) -> Self {
+        self.radius = r;
+        self
+    }
+    /// Set number of segments for circles/n-gons
+    pub fn segments(mut self, segments: usize) -> Self {
+        self.segments = segments.max(3);
+        self
+    }
+    /// Sets the color of the polygon
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn path(mut self, path: Path) -> Self {
+        self.path = path;
+        self
+    }
+}
+
+impl Drop for PathBuilder<'_> {
+    fn drop(&mut self) {
+
+
+
+
+        let color = self.color.components();
+
+
+        use lyon::math::point;
+        use lyon::path::Path;
+        use lyon::tessellation::*;
+
+
+        // Build a Path.
+        let mut builder = Path::builder();
+        builder.begin(point(0.0, 0.0));
+        builder.line_to(point(100.0, 0.0));
+        builder.quadratic_bezier_to(point(200.0, 0.0), point(200.0, 100.0));
+        builder.cubic_bezier_to(point(100.0, 100.0), point(0.0, 100.0), point(0.0, 0.0));
+        builder.end(true);
+        let path = builder.build();
+        // Let's use our own custom vertex type instead of the default one.
+        //  #[derive(Copy, Clone, Debug)]
+        //  struct MyVertex { position: [f32; 2] }
+        // Will contain the result of the tessellation.
+        let mut geometry: VertexBuffers<Vertex, u16> = VertexBuffers::new();
+        let mut tessellator = FillTessellator::new();
+        {
+            // Compute the tessellation.
+            tessellator.tessellate_path(
+                &path,
+                &FillOptions::default(),
+                &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
+                    let [x, y] = vertex.position().to_array();
+                    Vertex {
+                        position: [x, y],
+                        color,
+                        tex_coords: [0.0, 0.0],
+                    }
+                }),
+            ).unwrap();
+        }
+        // The tessellated geometry is ready to be uploaded to the GPU.
+        println!(" -- {} vertices {} indices",
+                 geometry.vertices.len(),
+                 geometry.indices.len()
+        );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        let rot = Mat2::from_angle(self.rotation);
+        let center = self.position;
+        let color = self.color.components();
+
+        let vert_count = geometry.vertices.len();
+        let idx_count = geometry.indices.len();
+
+        if let Some((verts, indices, base)) =
+            self.batch
+                .allocate(vert_count, idx_count, None, self.shader_id)
+        {
+            let mut vi = 0;
+            for (vo) in geometry.vertices {
+               // let world = rot * *p + center;
+                verts[vi] = vo;  //Vertex::new(world.into(), color, [0.0, 0.0]);
+                vi+=1;
+            }
+
+            // Convex fan triangulation
+            for i in 0..idx_count {
+                indices[i] = geometry.indices[i];
             }
         }
     }

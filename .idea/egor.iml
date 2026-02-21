@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="EMPTY_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/crates/egor_app/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/egor_glue/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/egor_render/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/egor_render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demos/ferrismark/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demos/hot_postfx/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demos/secs_particles/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demos/shooter/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/xtask/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demos/health_bar/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

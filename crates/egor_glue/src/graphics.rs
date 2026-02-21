@@ -7,6 +7,7 @@ use crate::{
     primitives::{PolygonBuilder, PolylineBuilder, PrimitiveBatch, RectangleBuilder},
     text::{TextBuilder, TextRenderer},
 };
+use crate::primitives::PathBuilder;
 
 /// High-level 2D drawing interface that simplifies the [`Renderer`]
 pub struct Graphics<'a> {
@@ -131,6 +132,13 @@ impl<'a> Graphics<'a> {
     pub fn polyline(&mut self) -> PolylineBuilder<'_> {
         PolylineBuilder::new(&mut self.batch, self.current_shader)
     }
+
+
+    pub fn path(&mut self) -> PathBuilder<'_> {
+        PathBuilder::new(&mut self.batch, self.current_shader)
+    }
+
+
 
     /// Load a font from disk into the text system.
     pub fn load_font(&mut self, bytes: &[u8]) -> Option<String> {

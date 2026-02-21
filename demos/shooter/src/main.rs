@@ -9,7 +9,8 @@ use egor::{
     math::{Rect, Vec2, vec2},
     render::{Align, Color, OffscreenTarget},
 };
-
+use egor::app::egui::epaint::Vertex;
+use egor::app::egui::Pos2;
 use crate::{animation::SpriteAnim, tilemap::EgorMap};
 
 const PLAYER_SIZE: f32 = 64.0;
@@ -177,42 +178,8 @@ fn main() {
 
             let screen_size = gfx.screen_size();
 
-            if state.game_over {
-                gfx.text("GAME OVER")
-                    .color(Color::RED)
-                    .size(32.0)
-                    .bold()
-                    .in_rect(Rect::new(Vec2::ZERO, screen_size), Align::MiddleCenter);
-                return;
-            }
-            if let Some(minimap) = &mut state.minimap {
-                gfx.render_offscreen(minimap, |gfx| {
-                    gfx.clear(Color::BLACK);
 
-                    gfx.camera().set_zoom(0.15);
-                    gfx.camera()
-                        .center(state.player.rect.center(), vec2(200.0, 200.0));
 
-                    for e in &state.enemies {
-                        gfx.rect()
-                            .at(e.rect.position)
-                            .color(Color::RED)
-                            .size(Vec2::splat(48.0));
-                    }
-
-                    gfx.rect()
-                        .at(state.player.rect.position)
-                        .color(Color::GREEN)
-                        .texture(41);
-
-                    for b in &state.bullets {
-                        gfx.rect()
-                            .at(b.rect.position)
-                            .size(Vec2::splat(16.0))
-                            .color(Color::WHITE);
-                    }
-                });
-            }
             let screen_half = screen_size / 2.0;
             let position = state.player.rect.position - screen_half
                 + Into::<Vec2>::into(input.mouse_position());
@@ -230,7 +197,7 @@ fn main() {
 
             gfx.camera().center(state.player.rect.position, screen_size);
             gfx.clear(Color::WHITE);
-            state.map.render(gfx);
+
 
             state.fire_cd -= timer.delta;
             if input.mouse_held(MouseButton::Left) && state.fire_cd <= 0.0 {
@@ -247,66 +214,77 @@ fn main() {
                 e.rect.translate(dir * e.speed * timer.delta);
             }
 
-            state.kills += handle_bullet_hits(
-                &mut state.bullets,
-                &mut state.enemies,
-                state.player.rect.position,
-            );
 
-            for b in &mut state.bullets {
-                b.rect.translate(b.vel * timer.delta);
-                let angle = b.vel.y.atan2(b.vel.x);
-                gfx.rect().with(&b.rect).rotate(angle).color(Color::BLUE);
+
+
+
+            let mut points = Vec::new();
+
+            let radius = 100.0;
+            let segment_count = 12;
+
+            for i in 0..=segment_count {
+                let theta = (i as f32 / segment_count as f32) * std::f32::consts::TAU;
+
+                let x = radius * theta.cos();
+                let y = radius * theta.sin();
+
+                points.push(Vec2::new(x, y));
             }
 
-            state.enemy_anim.update(timer.delta);
-            for e in &mut state.enemies {
-                let dir = state.player.rect.position - e.rect.position;
-                let angle = dir.y.atan2(dir.x);
 
-                if dir.length() < 15.0 {
-                    state.player.hp -= 1.0;
-                    state.player.flash = 0.1;
-                }
 
-                e.flash = (e.flash - timer.delta).max(0.0);
-                gfx.rect()
-                    .with(&e.rect)
-                    .rotate(angle)
-                    .color(if e.flash > 0.0 {
-                        Color::RED
-                    } else {
-                        Color::WHITE
-                    })
-                    .texture(state.enemy_tex)
-                    .uv(state.enemy_anim.uv());
-            }
+            // let mut values = Vec::new();
+            //
+            // let radius = 100.0;
+            // let segment_count = 6;
+            // for i in 0..=segment_count {
+            //     values.push(std::f32::consts::TAU * (i as f32 / segment_count as f32));
+            // }
+            //
+            //     let mut points = Vec::new();
+            //
+            //
+            //
+            //
+            //     for i in 0..segment_count {
+            //
+            //         points.push(Vec2::new(radius * values[i].sin(), radius * values[i].cos()));
+            //     }
 
-            if state.player.hp <= 0.0 {
-                state.game_over = true;
-            }
 
-            state.player.flash = (state.player.flash - timer.delta).max(0.0);
-            let dir = position - state.player.rect.position;
-            let angle = dir.y.atan2(dir.x);
 
-            let uv = if moving {
-                state.player_anim.update(timer.delta);
-                state.player_anim.uv()
-            } else {
-                state.player_anim.frame_uv(0)
-            };
 
-            gfx.rect()
-                .with(&state.player.rect)
-                .rotate(angle)
-                .color(if state.player.flash > 0.0 {
-                    Color::RED
-                } else {
-                    Color::WHITE
-                })
-                .texture(state.player_tex)
-                .uv(uv);
+
+
+            use lyon::math::point;
+            use lyon::path::Path;
+
+
+            // Build a Path.
+            let mut builder = Path::builder();
+            builder.begin(point(0.0, 0.0));
+            builder.line_to(point(1.0, 0.0));
+            builder.quadratic_bezier_to(point(2.0, 0.0), point(2.0, 1.0));
+            builder.cubic_bezier_to(point(1.0, 1.0), point(0.0, 1.0), point(0.0, 0.0));
+            builder.end(true);
+            let path = builder.build();
+
+            gfx.path().path(path).color(Color::BLUE);
+
+
+
+
+
+
+
+                gfx.polyline().points(&points).thickness(4.0).color(Color::RED);
+
+
+
+
+
+
 
             if state.enemies.is_empty() {
                 state.wave += 1;
@@ -335,15 +313,6 @@ fn main() {
                     .size(vec2(200.0, 200.0))
                     .texture(state.minimap_tex);
             }
-
-            Window::new("Debug").show(egui_ctx, |ui| {
-                ui.label(format!("FPS: {}", timer.fps));
-                ui.label(format!("Wave: {}", state.wave));
-                ui.label(format!("Zombies killed: {}", state.kills));
-                ui.label(format!("HP: {:.0}", state.player.hp));
-                ui.label(format!("Fire rate: {:.1}/s", state.fire_rate));
-                ui.label(format!("Bullet Spread: {}", state.spread));
-            });
         },
     );
 }
